@@ -95,6 +95,14 @@ button:active{
     font-size:14px;
 }
 
+.connected{
+    color:#22c55e;
+}
+
+.disconnected{
+    color:#ef4444;
+}
+
 </style>
 </head>
 <body>
@@ -107,85 +115,139 @@ button:active{
         CLICK
     </button>
 
-    <div class="info">
-        Multiplayer Counter
+    <div
+        id="status"
+        class="info disconnected"
+    >
+        Conectando...
     </div>
 
 </div>
 
 <script>
 
-const API =
-"https://contador-online.ionmateusoprea.workers.dev";
-
 const counter =
-document.getElementById("counter");
+document.getElementById(
+    "counter"
+);
 
 const btn =
-document.getElementById("btn");
+document.getElementById(
+    "btn"
+);
+
+const status =
+document.getElementById(
+    "status"
+);
 
 let lastValue = null;
 
 function bounce(){
 
-    btn.classList.remove("bounce");
+    btn.classList.remove(
+        "bounce"
+    );
 
     void btn.offsetWidth;
 
-    btn.classList.add("bounce");
+    btn.classList.add(
+        "bounce"
+    );
 }
 
-async function refresh(){
+function connect(){
 
-    try{
+    const ws =
+    new WebSocket(
+        "wss://contador-online.ionmateusoprea.workers.dev/ws"
+    );
 
-        const r =
-        await fetch(API + "/count");
+    ws.onopen = ()=>{
 
-        const data =
-        await r.json();
-
-        counter.textContent =
-        data.count;
-
-        if(
-            lastValue !== null &&
-            data.count !== lastValue
-        ){
-            bounce();
-        }
-
-        lastValue =
-        data.count;
-
-    }catch(err){
-
-        console.error(err);
-
-    }
-}
-
-btn.onclick = async ()=>{
-
-    try{
-
-        await fetch(
-            API + "/increment"
+        console.log(
+            "WebSocket conectado"
         );
 
-    }catch(err){
+        status.textContent =
+        "Conectado";
+
+        status.className =
+        "info connected";
+    };
+
+    ws.onmessage = (event)=>{
+
+        try{
+
+            const data =
+            JSON.parse(
+                event.data
+            );
+
+            counter.textContent =
+            data.count;
+
+            if(
+                lastValue !== null &&
+                data.count !== lastValue
+            ){
+                bounce();
+            }
+
+            lastValue =
+            data.count;
+
+        }catch(err){
+
+            console.error(err);
+
+        }
+    };
+
+    ws.onclose = ()=>{
+
+        console.log(
+            "Desconectado"
+        );
+
+        status.textContent =
+        "Reconectando...";
+
+        status.className =
+        "info disconnected";
+
+        setTimeout(
+            connect,
+            1000
+        );
+    };
+
+    ws.onerror = (err)=>{
 
         console.error(err);
 
-    }
-};
+    };
 
-setInterval(
-    refresh,
-    200
-);
+    btn.onclick = ()=>{
 
-refresh();
+        if(
+            ws.readyState ===
+            WebSocket.OPEN
+        ){
+
+            ws.send(
+                JSON.stringify({
+                    action:
+                    "increment"
+                })
+            );
+
+        }
+    };
+}
+
+connect();
 
 </script>
 
