@@ -17,7 +17,7 @@
         height: 100vh;
         background: #111;
         font-family: Arial, sans-serif;
-        overflow: hidden; /* Sem scroll na página inteira */
+        overflow: hidden;
         display: flex;
         color: white;
     }
@@ -49,7 +49,6 @@
         padding: 10px;
     }
 
-    /* O scroll customizado da sidebar */
     #ranking-list::-webkit-scrollbar { width: 8px; }
     #ranking-list::-webkit-scrollbar-track { background: #1a1a1a; }
     #ranking-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
@@ -64,7 +63,7 @@
         display: flex;
         align-items: center;
         padding: 0 15px;
-        transition: transform 0.4s ease; /* Animação suave de troca de posição */
+        transition: transform 0.4s ease;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
@@ -115,7 +114,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     .profile-info img {
@@ -125,17 +124,23 @@
         border: 2px solid #22c55e;
     }
 
+    /* Botão Logout Alterado */
     .logout-btn {
-        background: #ef4444;
-        color: white;
-        border: none;
-        padding: 6px 12px;
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid #ef4444;
+        padding: 2px 8px;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 12px;
-        font-weight: bold;
+        font-size: 10px;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        align-self: flex-end; /* Posiciona abaixo, alinhado à direita */
     }
-    .logout-btn:hover { background: #dc2626; }
+    .logout-btn:hover { 
+        background: #ef4444; 
+        color: white;
+    }
 
     /* --- BOTÃO E CONTADOR --- */
     .container { text-align: center; }
@@ -165,7 +170,6 @@
     #btn:hover:not(:disabled) { transform: scale(1.05); }
     #btn:active:not(:disabled) { transform: scale(.95); }
 
-    /* Estilo para quando não está logado */
     #btn:disabled {
         opacity: 0.3;
         cursor: not-allowed;
@@ -194,8 +198,7 @@
 
 <div id="sidebar">
     <div class="ranking-header">Top Clickers</div>
-    <div id="ranking-list">
-        </div>
+    <div id="ranking-list"></div>
 </div>
 
 <div id="main-content">
@@ -203,12 +206,12 @@
     <div id="auth-container">
         <div id="google_btn"></div>
         
-        <div id="user_profile" style="display: none;">
+        <div id="user_profile" style="display: none; flex-direction: column; align-items: flex-end;">
             <div class="profile-info">
                 <span id="user_name"></span>
                 <img id="user_pic" src="" alt="Profile">
             </div>
-            <button id="logout_btn" class="logout-btn">Sair</button>
+            <button id="logout_btn" class="logout-btn">Logout</button>
         </div>
     </div>
 
@@ -235,10 +238,8 @@
 
     let lastValue = null;
     let ws = null;
-    let currentUser = null; // { id, name, picture }
+    let currentUser = null; 
 
-    // --- AUTENTICAÇÃO ---
-    
     function parseJwt(token) {
         try {
             const base64Url = token.split('.')[1];
@@ -287,14 +288,12 @@
     }
 
     window.onload = function () {
-        // Tenta carregar usuário salvo
         const savedUser = localStorage.getItem("clicker_user");
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             updateAuthUI();
         }
 
-        // SUBSTITUA O CLIENT_ID ABAIXO PELO SEU!
         google.accounts.id.initialize({
             client_id: "781462970668-3nar0k00da7hssqoqhd6pp5bj8hks0od.apps.googleusercontent.com", 
             callback: handleCredentialResponse
@@ -308,19 +307,13 @@
         connectWS();
     };
 
-    // --- ANIMAÇÃO E RANKING ---
-
     function renderLeaderboard(leaderboardData) {
-        // Altura de cada card + margem = 70px (60px altura + 10px espaço)
         const CARD_HEIGHT = 70; 
-
-        // Definir altura total do container para que o scroll funcione
         rankingList.style.height = `${leaderboardData.length * CARD_HEIGHT}px`;
 
         leaderboardData.forEach((player, index) => {
             let card = document.getElementById(`player-${player.id}`);
             
-            // Se o card não existe, cria
             if (!card) {
                 card = document.createElement("div");
                 card.id = `player-${player.id}`;
@@ -333,16 +326,12 @@
                 `;
                 rankingList.appendChild(card);
             } else {
-                // Atualiza contagem se o card já existe
                 document.getElementById(`clicks-${player.id}`).textContent = player.clicks;
             }
 
-            // Anima para a posição correta
             card.style.transform = `translateY(${index * CARD_HEIGHT}px)`;
         });
     }
-
-    // --- WEBSOCKET E LÓGICA DO JOGO ---
 
     function bounce() {
         btn.classList.remove("bounce");
@@ -361,19 +350,15 @@
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                
-                // Atualiza contador global
                 counter.textContent = data.count;
                 if (lastValue !== null && data.count !== lastValue) {
                     bounce();
                 }
                 lastValue = data.count;
 
-                // Atualiza ranking
                 if (data.leaderboard) {
                     renderLeaderboard(data.leaderboard);
                 }
-
             } catch (err) {
                 console.error(err);
             }
@@ -389,7 +374,7 @@
     }
 
     btn.onclick = () => {
-        if (!currentUser) return; // Segurança extra
+        if (!currentUser) return;
 
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
